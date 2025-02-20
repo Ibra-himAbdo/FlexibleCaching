@@ -10,8 +10,11 @@ public class FlexibleCacheService<T> : IFlexibleCacheService<T>
     public FlexibleCacheService(IDistributedCache cache, IConnectionMultiplexer? redisConnection = null)
     {
         _cache = cache;
+        Cache = _cache;
         _redisConnection = redisConnection;
     }
+
+    public IDistributedCache Cache { get; }
 
     public async Task SetAsync(string key, T value, TimeSpan? expiration)
     {
@@ -20,7 +23,7 @@ public class FlexibleCacheService<T> : IFlexibleCacheService<T>
             AbsoluteExpirationRelativeToNow = expiration ?? TimeSpan.FromMinutes(5)
         };
 
-        string serializedValue = JsonSerializer.Serialize(value);
+        var serializedValue = JsonSerializer.Serialize(value);
         await _cache.SetStringAsync(GetKeyPrefix(key), serializedValue, options);
 
         if (_cache is MemoryDistributedCache)
@@ -45,19 +48,24 @@ public class FlexibleCacheService<T> : IFlexibleCacheService<T>
 
     public async Task ClearAsync()
     {
-        if (_cache is RedisCache && _redisConnection != null)
+        switch (_cache)
         {
-            var redisDatabase = _redisConnection.GetDatabase();
-            var server = _redisConnection.GetServer(_redisConnection.GetEndPoints().First());
-            var keys = server.Keys(pattern: $"{KeyPrefix}*").ToArray();
-            await redisDatabase.KeyDeleteAsync(keys);
-        }
-        else if (_cache is MemoryDistributedCache)
-        {
-            foreach (var key in _memoryCacheKeys)
-                await _cache.RemoveAsync(key);
+            case RedisCache when _redisConnection != null:
+            {
+                var redisDatabase = _redisConnection.GetDatabase();
+                var server = _redisConnection.GetServer(_redisConnection.GetEndPoints().First());
+                var keys = server.Keys(pattern: $"{KeyPrefix}*").ToArray();
+                await redisDatabase.KeyDeleteAsync(keys);
+                break;
+            }
+            case MemoryDistributedCache:
+            {
+                foreach (var key in _memoryCacheKeys)
+                    await _cache.RemoveAsync(key);
 
-            _memoryCacheKeys.Clear();
+                _memoryCacheKeys.Clear();
+                break;
+            }
         }
     }
 
