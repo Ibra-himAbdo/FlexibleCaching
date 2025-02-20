@@ -4,3 +4,4 @@ global using Microsoft.Extensions.Caching.Distributed;
 global using Microsoft.Extensions.Caching.StackExchangeRedis;
 global using System.Text.Json;
 global using FlexibleCaching.API.Extensions;
+global using Serilog;

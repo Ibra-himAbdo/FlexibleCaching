@@ -22,11 +22,12 @@ public static class ServiceCollectionExtensions
             {
                 options.Configuration = redisConnectionString;
             });
-            Console.WriteLine("Successfully connected to Redis.");
+
+            Log.Logger.Information("Successfully connected to Redis.");
         }
         catch (Exception)
         {
-            Console.WriteLine("Failed to connect to Redis. Falling back to in-memory cache.");
+            Log.Logger.Warning("Failed to connect to Redis. Falling back to in-memory cache.");
             services.AddDistributedMemoryCache();
         }
 

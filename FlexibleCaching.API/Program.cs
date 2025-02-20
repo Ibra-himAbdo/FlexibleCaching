@@ -1,4 +1,15 @@
+var loggerConfiguration = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("serilog.json", optional: false, reloadOnChange: true)
+    .Build();
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(loggerConfiguration)
+    .CreateLogger();
+
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog();
 
 var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
 
